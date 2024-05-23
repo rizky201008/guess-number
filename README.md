@@ -1,6 +1,6 @@
 
 # Guess Number Game
-
+  
 <div style="display:flex;">  
 <img alt="App image" src="graphics/home_screen.png" width="30%">  
 <img alt="App image" src="graphics/level_setting_screen.png" width="30%">  
@@ -65,3 +65,8 @@ Copyright 2017-2023 Arnaud GIULIANI
    See the License for the specific language governing permissions and
    limitations under the License.
    ```
+
+### Game Assets
+[Robin](https://prinbles.itch.io/robin)
+### Game fonts
+[Pixel AE](https://essssam.itch.io/pixel-ae)
