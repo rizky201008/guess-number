@@ -1,5 +1,7 @@
 package com.vixiloc.guessnumber.presentation.view_model
 
+import android.content.ContentValues.TAG
+import android.util.Log
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
@@ -17,6 +19,10 @@ class GameScreenViewModel(useCaseManager: UseCaseManager) : ViewModel() {
     val analyzeAnswerUseCase = useCaseManager.analyzeAnswer()
     private val _state = mutableStateOf(GameScreenState())
     val state: State<GameScreenState> = _state
+
+    init {
+        generateRandomNumber()
+    }
 
     fun onEvent(event: GameScreenEvent) {
         when (event) {
@@ -87,11 +93,6 @@ class GameScreenViewModel(useCaseManager: UseCaseManager) : ViewModel() {
             is GameScreenEvent.ResetGame -> {
                 resetGame()
             }
-
-            is GameScreenEvent.UpdateSettings -> {
-                getSetting()
-                generateRandomNumber()
-            }
         }
     }
 
@@ -121,40 +122,43 @@ class GameScreenViewModel(useCaseManager: UseCaseManager) : ViewModel() {
     }
 
     private fun submitAnswer() {
-        val userAnswer = state.value.userAnswer.text.toInt()
         val answer = state.value.answer
         if (state.value.attempts == 0) {
             attemptOver()
         } else {
-            analyzeAnswerUseCase(userAnswer, answer).onEach { isCorrect ->
-                if (isCorrect) {
-                    generateRandomNumber()
-                    onEvent(
-                        GameScreenEvent.ShowMessageDialog(
-                            "Congratulations!",
-                            "Your answer is correct, answer is $answer!"
+            if (state.value.userAnswer.text.isNotBlank()) {
+                val userAnswer = state.value.userAnswer.text.toInt()
+                analyzeAnswerUseCase(userAnswer, answer).onEach { isCorrect ->
+                    if (isCorrect) {
+                        generateRandomNumber()
+                        onEvent(
+                            GameScreenEvent.ShowMessageDialog(
+                                "Congratulations!",
+                                "Your answer is correct, answer is $answer!"
+                            )
                         )
-                    )
-                    _state.value = state.value.copy(
-                        answerCorrect = true
-                    )
-                } else {
-                    onEvent(
-                        GameScreenEvent.ShowMessageDialog(
-                            "Try again",
-                            "Your answer is incorrect!"
+                        _state.value = state.value.copy(
+                            answerCorrect = true
                         )
-                    )
-                    _state.value =
-                        state.value.copy(
-                            attempts = state.value.attempts - 1
+                    } else {
+                        onEvent(
+                            GameScreenEvent.ShowMessageDialog(
+                                "Try again",
+                                "Your answer is incorrect!"
+                            )
                         )
-                }
-            }.launchIn(viewModelScope)
+                        _state.value =
+                            state.value.copy(
+                                attempts = state.value.attempts - 1
+                            )
+                    }
+                }.launchIn(viewModelScope)
+            }
         }
     }
 
     private fun generateRandomNumber() {
+        getSetting()
         state.value.setting?.let {
             when (it.gameLevel) {
                 GameLevel.EASY -> {
@@ -169,6 +173,9 @@ class GameScreenViewModel(useCaseManager: UseCaseManager) : ViewModel() {
                     _state.value = state.value.copy(answer = (1..1000).random())
                 }
             }
+        } ?: run {
+            _state.value = state.value.copy(answer = (1..10).random())
         }
+        Log.i(TAG, "generateRandomNumber: ${state.value.answer}")
     }
 }
