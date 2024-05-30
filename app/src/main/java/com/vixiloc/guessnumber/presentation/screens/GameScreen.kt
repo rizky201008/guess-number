@@ -30,7 +30,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -69,19 +68,22 @@ object GameScreen : Screen {
         val imeState = rememberImeState()
         val scrollState = rememberScrollState()
 
-        LaunchedEffect(Unit) {
-            onEvent(GameScreenEvent.UpdateSettings)
-        }
-
         Scaffold(
             modifier = Modifier,
             topBar = {
                 CenterAlignedTopAppBar(title = {
-                    Text(
-                        modifier = Modifier.padding(bottom = 30.dp),
-                        text = "Level: ${state.setting?.gameLevel ?: GameLevel.EASY}",
-                        style = MaterialTheme.typography.headlineMedium.copy(textAlign = TextAlign.Center)
-                    )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxSize(),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            modifier = Modifier,
+                            text = "Level: ${state.setting?.gameLevel ?: GameLevel.EASY}",
+                            style = MaterialTheme.typography.headlineSmall.copy()
+                        )
+                    }
                 }, navigationIcon = {
                     Image(
                         painter = painterResource(id = R.drawable.home_button),
@@ -121,7 +123,7 @@ object GameScreen : Screen {
                         )
                         Text(
                             text = "Attempt : ${state.attempts}",
-                            style = MaterialTheme.typography.headlineSmall
+                            style = MaterialTheme.typography.bodyMedium
                         )
                     }
 
@@ -142,7 +144,7 @@ object GameScreen : Screen {
                             painter = painterResource(id = R.drawable.rectangle_background),
                             contentDescription = null
                         )
-                        Text(text = "Restart", style = MaterialTheme.typography.headlineSmall)
+                        Text(text = "Restart", style = MaterialTheme.typography.bodyMedium)
                     }
                 }
 

@@ -12,5 +12,4 @@ sealed class GameScreenEvent {
     data object DismissConfirmDialog : GameScreenEvent()
     data object DismissConfirmDialog1 : GameScreenEvent()
     data object ResetGame : GameScreenEvent()
-    data object UpdateSettings : GameScreenEvent()
 }
