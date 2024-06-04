@@ -21,7 +21,6 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -47,6 +46,7 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.vixiloc.guessnumber.R
 import com.vixiloc.guessnumber.domain.model.GameLevel
+import com.vixiloc.guessnumber.presentation.components.ConfirmationDialog
 import com.vixiloc.guessnumber.presentation.components.rememberImeState
 import com.vixiloc.guessnumber.presentation.event.GameScreenEvent
 import com.vixiloc.guessnumber.presentation.view_model.GameScreenViewModel
@@ -73,15 +73,12 @@ object GameScreen : Screen {
             topBar = {
                 CenterAlignedTopAppBar(title = {
                     Row(
-                        modifier = Modifier
-                            .fillMaxSize(),
-                        horizontalArrangement = Arrangement.Center,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
                             modifier = Modifier,
                             text = "Level: ${state.setting?.gameLevel ?: GameLevel.EASY}",
-                            style = MaterialTheme.typography.headlineSmall.copy()
+                            style = MaterialTheme.typography.titleMedium.copy(textAlign = TextAlign.Center)
                         )
                     }
                 }, navigationIcon = {
@@ -123,7 +120,7 @@ object GameScreen : Screen {
                         )
                         Text(
                             text = "Attempt : ${state.attempts}",
-                            style = MaterialTheme.typography.bodyMedium
+                            style = MaterialTheme.typography.titleSmall
                         )
                     }
 
@@ -131,12 +128,7 @@ object GameScreen : Screen {
                         modifier = Modifier
                             .width(screenWidth / 3f)
                             .clickable {
-                                onEvent(
-                                    GameScreenEvent.ShowConfirmDialog(
-                                        "Confirmation",
-                                        "Are you sure you want to restart the game?"
-                                    )
-                                )
+                                onEvent(GameScreenEvent.ShowResetConfirmDialog)
                             },
                         contentAlignment = Alignment.Center
                     ) {
@@ -144,7 +136,7 @@ object GameScreen : Screen {
                             painter = painterResource(id = R.drawable.rectangle_background),
                             contentDescription = null
                         )
-                        Text(text = "Restart", style = MaterialTheme.typography.bodyMedium)
+                        Text(text = "Restart", style = MaterialTheme.typography.titleSmall)
                     }
                 }
 
@@ -237,104 +229,49 @@ object GameScreen : Screen {
                     )
                 }
 
-                if (state.showMessageDialog) {
-                    state.messageDialogText?.let { message ->
-                        AlertDialog(
-                            onDismissRequest = {
-                                onEvent(GameScreenEvent.DismissConfirmDialog)
-                            },
-                            confirmButton = {
-                                Button(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    onClick = {
-                                        onEvent(GameScreenEvent.DismissMessageDialog)
-                                    }) {
-
-                                    Text(if (state.answerCorrect) "Play Again" else "Try Again")
-                                }
-                            },
-                            title = {
-                                Text(
-                                    text = state.messageDialogTitle ?: "Info",
-                                    style = MaterialTheme.typography.titleMedium
-                                )
-                            },
-                            text = {
-                                Text(
-                                    text = message,
-                                    style = MaterialTheme.typography.bodyLarge
-                                )
-                            })
-                    }
+                if (state.showResetConfirmDialog) {
+                    ConfirmationDialog(
+                        onDismiss = { onEvent(GameScreenEvent.DismissResetConfirmDialog) },
+                        title = state.resetTitle,
+                        message = state.resetMessage,
+                        dismissText = "Cancel",
+                        confirmButton = {
+                            Button(onClick = { onEvent(GameScreenEvent.ConfirmResetConfirmDialog) }) {
+                                Text(text = "Yes")
+                            }
+                        }
+                    )
                 }
 
-                if (state.showConfirmDialog) {
-                    state.confirmDialogText?.let { message ->
-                        AlertDialog(
-                            onDismissRequest = {
-                                onEvent(GameScreenEvent.DismissConfirmDialog)
-                            },
-                            confirmButton = {
-                                Button(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    onClick = {
-                                        onEvent(GameScreenEvent.ResetGame)
-                                    }) {
-                                    Text("Yes")
-                                }
-                            },
-                            dismissButton = {
-                                Button(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    onClick = {
-                                        onEvent(GameScreenEvent.DismissConfirmDialog)
-                                    }) {
-                                    Text("Cancel")
-                                }
-                            },
-                            title = {
-                                Text(
-                                    text = state.confirmDialogTitle ?: "Confirmation",
-                                    style = MaterialTheme.typography.titleMedium
-                                )
-                            },
-                            text = {
-                                Text(
-                                    text = message,
-                                    style = MaterialTheme.typography.bodyLarge
-                                )
-                            })
-                    }
+                if (state.showCorrectMessageDialog) {
+                    ConfirmationDialog(
+                        onDismiss = { onEvent(GameScreenEvent.DismissCorrectMessageDialog) },
+                        title = state.correctTitle,
+                        message = state.correctMessage,
+                        confirmButton = {
+                            Button(onClick = { onEvent(GameScreenEvent.DismissCorrectMessageDialog) }) {
+                                Text(text = "Play Again")
+                            }
+                        }
+                    )
                 }
 
-                if (state.showConfirmDialog1) {
-                    state.confirmDialogText?.let { message ->
-                        AlertDialog(
-                            onDismissRequest = {
-                                onEvent(GameScreenEvent.DismissConfirmDialog1)
-                            },
-                            confirmButton = {
-                                Button(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    onClick = {
-                                        onEvent(GameScreenEvent.ResetGame)
-                                    }) {
-                                    Text("Yes")
-                                }
-                            },
-                            title = {
-                                Text(
-                                    text = state.confirmDialogTitle ?: "Confirmation",
-                                    style = MaterialTheme.typography.titleMedium
-                                )
-                            },
-                            text = {
-                                Text(
-                                    text = message,
-                                    style = MaterialTheme.typography.bodyLarge
-                                )
-                            })
-                    }
+                if (state.showWrongMessageDialog) {
+                    ConfirmationDialog(
+                        onDismiss = { onEvent(GameScreenEvent.DismissWrongMessageDialog) },
+                        title = state.wrongTitle,
+                        message = state.wrongMessage,
+                        dismissText = "Try Again",
+                    )
+                }
+
+                if (state.showGameOverMessageDialog) {
+                    ConfirmationDialog(
+                        onDismiss = { onEvent(GameScreenEvent.DismissGameOverMessageDialog) },
+                        title = state.gameOverTitle,
+                        message = state.gameOverMessage,
+                        dismissText = "Try Again",
+                    )
                 }
 
                 if (imeState.value) {

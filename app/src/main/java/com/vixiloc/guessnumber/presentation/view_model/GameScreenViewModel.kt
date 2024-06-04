@@ -4,6 +4,7 @@ import android.content.ContentValues.TAG
 import android.util.Log
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.vixiloc.guessnumber.domain.model.GameLevel
@@ -21,6 +22,7 @@ class GameScreenViewModel(useCaseManager: UseCaseManager) : ViewModel() {
     val state: State<GameScreenState> = _state
 
     init {
+        getSetting()
         generateRandomNumber()
     }
 
@@ -34,63 +36,70 @@ class GameScreenViewModel(useCaseManager: UseCaseManager) : ViewModel() {
                 submitAnswer()
             }
 
-            is GameScreenEvent.ShowMessageDialog -> {
-                _state.value =
-                    state.value.copy(
-                        showMessageDialog = true,
-                        messageDialogTitle = event.title,
-                        messageDialogText = event.message
-                    )
-            }
-
-            is GameScreenEvent.ShowConfirmDialog -> {
-                _state.value =
-                    state.value.copy(
-                        showConfirmDialog = true,
-                        confirmDialogTitle = event.title,
-                        confirmDialogText = event.message
-                    )
-            }
-
-            is GameScreenEvent.ShowConfirmDialog1 -> {
-                _state.value =
-                    state.value.copy(
-                        showConfirmDialog1 = true,
-                        confirmDialogTitle = event.title,
-                        confirmDialogText = event.message
-                    )
-            }
-
-            is GameScreenEvent.DismissConfirmDialog -> {
-                _state.value =
-                    state.value.copy(
-                        showConfirmDialog = false,
-                        confirmDialogTitle = null,
-                        confirmDialogText = null
-                    )
-            }
-
-            is GameScreenEvent.DismissConfirmDialog1 -> {
-                resetGame()
-                _state.value =
-                    state.value.copy(
-                        showConfirmDialog1 = false,
-                        confirmDialogText = null,
-                        confirmDialogTitle = null,
-                    )
-            }
-
-            is GameScreenEvent.DismissMessageDialog -> {
-                _state.value =
-                    state.value.copy(
-                        showMessageDialog = false,
-                        messageDialogText = null,
-                        messageDialogTitle = null,
-                        answerCorrect = false
-                    )
-            }
-
             is GameScreenEvent.ResetGame -> {
+                resetGame()
+            }
+
+            is GameScreenEvent.ShowResetConfirmDialog -> {
+                _state.value = state.value.copy(
+                    showResetConfirmDialog = true,
+                    resetTitle = "Reset Game",
+                    resetMessage = "Are you sure you want to reset the game?"
+                )
+            }
+
+            is GameScreenEvent.DismissResetConfirmDialog -> {
+                _state.value = state.value.copy(
+                    showResetConfirmDialog = false
+                )
+            }
+
+            is GameScreenEvent.ConfirmResetConfirmDialog -> {
+                resetGame()
+            }
+
+            is GameScreenEvent.ShowCorrectMessageDialog -> {
+                _state.value = state.value.copy(
+                    showCorrectMessageDialog = true,
+                    correctTitle = "Correct",
+                    correctMessage = "Your answer (${state.value.answer}) is correct!"
+                )
+            }
+
+            is GameScreenEvent.DismissCorrectMessageDialog -> {
+                _state.value = state.value.copy(
+                    showCorrectMessageDialog = false,
+                )
+                resetGame()
+            }
+
+            is GameScreenEvent.ShowWrongMessageDialog -> {
+                _state.value = state.value.copy(
+                    showWrongMessageDialog = true,
+                    wrongTitle = "Wrong",
+                    wrongMessage = "Your answer is incorrect!"
+                )
+            }
+
+            is GameScreenEvent.DismissWrongMessageDialog -> {
+                _state.value = state.value.copy(
+                    showWrongMessageDialog = false
+                )
+                resetInput()
+            }
+            
+            is GameScreenEvent.ShowGameOverMessageDialog -> {
+                _state.value = state.value.copy(
+                    showGameOverMessageDialog = true,
+                    gameOverTitle = "Game Over",
+                    gameOverMessage = "You have no more attempts left, the correct answer is ${state.value.answer}. Would you want to try again?"
+                )
+            }
+
+            is GameScreenEvent.DismissGameOverMessageDialog -> {
+                _state.value = state.value.copy(
+                    showGameOverMessageDialog = false
+                )
                 resetGame()
             }
         }
@@ -99,19 +108,15 @@ class GameScreenViewModel(useCaseManager: UseCaseManager) : ViewModel() {
     private fun resetGame() {
         generateRandomNumber()
         _state.value = state.value.copy(
-            userAnswer = state.value.userAnswer.copy(text = ""),
             attempts = 3,
-            showConfirmDialog = false,
-            showConfirmDialog1 = false
+            showResetConfirmDialog = false
         )
+        resetInput()
     }
 
-    private fun attemptOver() {
-        onEvent(
-            GameScreenEvent.ShowConfirmDialog1(
-                "Game Over",
-                "You have no more attempts left, the correct answer is ${state.value.answer}. Would you want to try again?"
-            )
+    private fun resetInput() {
+        _state.value = state.value.copy(
+            userAnswer = TextFieldValue("")
         )
     }
 
@@ -124,28 +129,20 @@ class GameScreenViewModel(useCaseManager: UseCaseManager) : ViewModel() {
     private fun submitAnswer() {
         val answer = state.value.answer
         if (state.value.attempts == 0) {
-            attemptOver()
+            onEvent(GameScreenEvent.ShowGameOverMessageDialog)
         } else {
-            if (state.value.userAnswer.text.isNotBlank()) {
-                val userAnswer = state.value.userAnswer.text.toInt()
-                analyzeAnswerUseCase(userAnswer, answer).onEach { isCorrect ->
-                    if (isCorrect) {
-                        generateRandomNumber()
-                        onEvent(
-                            GameScreenEvent.ShowMessageDialog(
-                                "Congratulations!",
-                                "Your answer is correct, answer is $answer!"
-                            )
-                        )
-                        _state.value = state.value.copy(
-                            answerCorrect = true
-                        )
-                    } else {
-                        onEvent(
-                            GameScreenEvent.ShowMessageDialog(
-                                "Try again",
-                                "Your answer is incorrect!"
-                            )
+            analyzeAnswerUseCase(userAnswer, answer).onEach { isCorrect ->
+                if (isCorrect) {
+                    onEvent(
+                        GameScreenEvent.ShowCorrectMessageDialog
+                    )
+                } else {
+                    onEvent(
+                        GameScreenEvent.ShowWrongMessageDialog
+                    )
+                    _state.value =
+                        state.value.copy(
+                            attempts = state.value.attempts - 1
                         )
                         _state.value =
                             state.value.copy(
@@ -158,9 +155,8 @@ class GameScreenViewModel(useCaseManager: UseCaseManager) : ViewModel() {
     }
 
     private fun generateRandomNumber() {
-        getSetting()
-        state.value.setting?.let {
-            when (it.gameLevel) {
+        if (state.value.setting != null) {
+            when (state.value.setting!!.gameLevel) {
                 GameLevel.EASY -> {
                     _state.value = state.value.copy(answer = (1..10).random())
                 }
@@ -173,9 +169,11 @@ class GameScreenViewModel(useCaseManager: UseCaseManager) : ViewModel() {
                     _state.value = state.value.copy(answer = (1..1000).random())
                 }
             }
-        } ?: run {
+        } else {
             _state.value = state.value.copy(answer = (1..10).random())
         }
-        Log.i(TAG, "generateRandomNumber: ${state.value.answer}")
+
+
+        Log.i(TAG, "Correct answer: ${state.value.answer}")
     }
 }
