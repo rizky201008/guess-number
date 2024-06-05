@@ -62,13 +62,15 @@ class GameScreenViewModel(useCaseManager: UseCaseManager) : ViewModel() {
                 _state.value = state.value.copy(
                     showCorrectMessageDialog = true,
                     correctTitle = "Correct",
-                    correctMessage = "Your answer (${state.value.answer}) is correct!"
+                    correctMessage = "Your answer (${state.value.answer}) is correct!",
+                    answerCorrect = true
                 )
             }
 
             is GameScreenEvent.DismissCorrectMessageDialog -> {
                 _state.value = state.value.copy(
                     showCorrectMessageDialog = false,
+                    answerCorrect = false
                 )
                 resetGame()
             }
@@ -87,7 +89,7 @@ class GameScreenViewModel(useCaseManager: UseCaseManager) : ViewModel() {
                 )
                 resetInput()
             }
-            
+
             is GameScreenEvent.ShowGameOverMessageDialog -> {
                 _state.value = state.value.copy(
                     showGameOverMessageDialog = true,
@@ -127,23 +129,25 @@ class GameScreenViewModel(useCaseManager: UseCaseManager) : ViewModel() {
     }
 
     private fun submitAnswer() {
-        val answer = state.value.answer
         if (state.value.attempts == 0) {
             onEvent(GameScreenEvent.ShowGameOverMessageDialog)
         } else {
-            analyzeAnswerUseCase(userAnswer, answer).onEach { isCorrect ->
-                if (isCorrect) {
-                    onEvent(
-                        GameScreenEvent.ShowCorrectMessageDialog
-                    )
-                } else {
-                    onEvent(
-                        GameScreenEvent.ShowWrongMessageDialog
-                    )
-                    _state.value =
-                        state.value.copy(
-                            attempts = state.value.attempts - 1
+            if (state.value.userAnswer.text.isNotBlank()) {
+                val answer = state.value.answer
+                val userAnswer = state.value.userAnswer.text.toInt()
+                analyzeAnswerUseCase(userAnswer, answer).onEach { isCorrect ->
+                    if (isCorrect) {
+                        onEvent(
+                            GameScreenEvent.ShowCorrectMessageDialog
                         )
+                    } else {
+                        onEvent(
+                            GameScreenEvent.ShowWrongMessageDialog
+                        )
+                        _state.value =
+                            state.value.copy(
+                                attempts = state.value.attempts - 1
+                            )
                         _state.value =
                             state.value.copy(
                                 attempts = state.value.attempts - 1
@@ -176,4 +180,5 @@ class GameScreenViewModel(useCaseManager: UseCaseManager) : ViewModel() {
 
         Log.i(TAG, "Correct answer: ${state.value.answer}")
     }
+
 }
