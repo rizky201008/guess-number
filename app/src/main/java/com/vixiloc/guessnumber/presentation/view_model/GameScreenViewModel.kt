@@ -144,14 +144,7 @@ class GameScreenViewModel(useCaseManager: UseCaseManager) : ViewModel() {
                         onEvent(
                             GameScreenEvent.ShowWrongMessageDialog
                         )
-                        _state.value =
-                            state.value.copy(
-                                attempts = state.value.attempts - 1
-                            )
-                        _state.value =
-                            state.value.copy(
-                                attempts = state.value.attempts - 1
-                            )
+                        _state.value = state.value.copy(attempts = state.value.attempts - 1)
                     }
                 }.launchIn(viewModelScope)
             }
